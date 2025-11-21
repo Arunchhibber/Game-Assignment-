@@ -3,9 +3,19 @@ import Game from "./Game";
 
 function App() {
   return (
-    <div className="app">
-      <h1>Jump Game with Dual Obstacles</h1>
-      <Game />
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh", // full screen vertically
+        background: "#f0f0f0", // 
+      }}
+    >
+      <div>
+        <h1 style={{ textAlign: "center" }}>Jump Game with Dual Obstacles</h1>
+        <Game />
+      </div>
     </div>
   );
 }
