@@ -36,21 +36,30 @@ const Game = () => {
   };
 
   // Move left/right
-  const handleKeyDown = (e) => {
-    if (e.key === "ArrowLeft") {
+ // WASD controls
+useEffect(() => {
+  const handleKeyPress = (e) => {
+    if (e.key === "a" || e.key === "A") {
       setPlayerPos((pos) => ({
         ...pos,
         x: Math.max(0, pos.x - 10),
       }));
-    } else if (e.key === "ArrowRight") {
+    } 
+    else if (e.key === "d" || e.key === "D") {
       setPlayerPos((pos) => ({
         ...pos,
         x: Math.min(GAME_WIDTH - PLAYER_SIZE, pos.x + 10),
       }));
-    } else if (e.code === "Space") {
+    } 
+    else if (e.key === "w" || e.key === "W") {
       jump();
     }
   };
+
+  window.addEventListener("keydown", handleKeyPress);
+  return () => window.removeEventListener("keydown", handleKeyPress);
+}, []);
+
 
   // Generate obstacle pairs
   useEffect(() => {
@@ -104,7 +113,7 @@ const Game = () => {
     <div
       className="game-area"
       tabIndex={0}
-      onKeyDown={handleKeyDown}
+    
       onClick={jump}
     >
       <Player x={playerPos.x} bottom={playerPos.bottom} />
