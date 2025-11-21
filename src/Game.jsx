@@ -16,25 +16,24 @@ const Game = () => {
   // Jump function
   const jump = () => {
     if (playerPos.bottom === 0) {
-      let jumpHeight = 0;
-      const upInterval = setInterval(() => {
-        jumpHeight += 5;
-        setPlayerPos((pos) => ({ ...pos, bottom: jumpHeight }));
-        if (jumpHeight >= 120) { // max jump
-          clearInterval(upInterval);
-          const downInterval = setInterval(() => {
-            jumpHeight -= 5;
-            setPlayerPos((pos) => ({ ...pos, bottom: jumpHeight }));
-            if (jumpHeight <= 0) {
-              setPlayerPos((pos) => ({ ...pos, bottom: 0 }));
-              clearInterval(downInterval);
-            }
-          }, 20);
-        }
+      let velocity = 12;
+      const gravity = 0.6;
+
+      const jumpInterval = setInterval(() => {
+        velocity -= gravity;
+        setPlayerPos((pos) => {
+          let newBottom = pos.bottom + velocity;
+
+          if (newBottom <= 0) {
+            clearInterval(jumpInterval);
+            return { ...pos, bottom: 0 };
+          }
+
+          return { ...pos, bottom: newBottom };
+        });
       }, 20);
     }
   };
-
 
  // WASD controls
 useEffect(() => {
@@ -86,7 +85,7 @@ useEffect(() => {
   }, []);
 
   // Collision detection & scoring
-  // Collision detection & scoring FIXED
+
 useEffect(() => {
   const check = setInterval(() => {
     obstacles.forEach((obs) => {
