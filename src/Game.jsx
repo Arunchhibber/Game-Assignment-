@@ -35,7 +35,7 @@ const Game = () => {
     }
   };
 
-  // Move left/right
+
  // WASD controls
 useEffect(() => {
   const handleKeyPress = (e) => {
@@ -86,28 +86,38 @@ useEffect(() => {
   }, []);
 
   // Collision detection & scoring
-  useEffect(() => {
-    const check = setInterval(() => {
-      obstacles.forEach((obs) => {
-        // Collision top
-        if (
-          playerPos.x + PLAYER_SIZE > obs.left &&
-          playerPos.x < obs.left + OBSTACLE_WIDTH &&
-          (playerPos.bottom + PLAYER_SIZE > obs.gapTop + GAP_HEIGHT ||
-            playerPos.bottom < obs.gapTop)
-        ) {
-          alert("Game Over! Score: " + score);
-          setObstacles([]);
-          setScore(0);
-        } else if (
-          obs.left + OBSTACLE_WIDTH === playerPos.x // passed obstacle
-        ) {
-          setScore((prev) => prev + 1);
-        }
-      });
-    }, 20);
-    return () => clearInterval(check);
-  }, [obstacles, playerPos, score]);
+  // Collision detection & scoring FIXED
+useEffect(() => {
+  const check = setInterval(() => {
+    obstacles.forEach((obs) => {
+      const playerRight = playerPos.x + PLAYER_SIZE;
+      const obsRight = obs.left + OBSTACLE_WIDTH;
+
+      // Horizontal collision check
+      const isHorizontalOverlap = playerRight > obs.left && playerPos.x < obsRight;
+
+      // Vertical collision (not inside gap)
+      const hitTopPipe = playerPos.bottom + PLAYER_SIZE < obs.gapTop;
+      const hitBottomPipe = playerPos.bottom > obs.gapTop + GAP_HEIGHT;
+
+      // Collision happens if overlapping horizontally AND NOT inside gap
+      if (isHorizontalOverlap && (hitTopPipe || hitBottomPipe)) {
+        alert("Game Over! Score: " + score);
+        setObstacles([]);
+        setScore(0);
+      }
+
+      // Scoring — player passed obstacle
+      if (obsRight < playerPos.x && !obs.passed) {
+        setScore((prev) => prev + 1);
+        obs.passed = true;
+      }
+    });
+  }, 20);
+
+  return () => clearInterval(check);
+}, [obstacles, playerPos, score]);
+
 
   return (
     <div
