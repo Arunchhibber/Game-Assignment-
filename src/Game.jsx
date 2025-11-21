@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Player from "./Player";
 import Obstacle from "./Obstacle";
 
@@ -7,129 +7,167 @@ const GAME_HEIGHT = 300;
 const PLAYER_SIZE = 30;
 const OBSTACLE_WIDTH = 40;
 const GAP_HEIGHT = 100;
+const OBSTACLE_SPEED = 5;
 
 const Game = () => {
-  const [playerPos, setPlayerPos] = useState({ x: 50, bottom: 0 });
+  const [playerPos, setPlayerPos] = useState({ x: 50, y: GAME_HEIGHT - PLAYER_SIZE });
+  const [velocity, setVelocity] = useState(0);
   const [obstacles, setObstacles] = useState([]);
   const [score, setScore] = useState(0);
 
-  // Jump function
-  const jump = () => {
-    if (playerPos.bottom === 0) {
-      let velocity = 12;
-      const gravity = 0.6;
+  const gameAreaRef = useRef(null);
 
-      const jumpInterval = setInterval(() => {
-        velocity -= gravity;
-        setPlayerPos((pos) => {
-          let newBottom = pos.bottom + velocity;
+  const gravity = 0.6;
+  const jumpStrength = 6; // shorter jump per click
 
-          if (newBottom <= 0) {
-            clearInterval(jumpInterval);
-            return { ...pos, bottom: 0 };
-          }
+  // Focus the game area for keyboard controls
+  useEffect(() => {
+    gameAreaRef.current?.focus();
+  }, []);
 
-          return { ...pos, bottom: newBottom };
-        });
-      }, 20);
-    }
+  // Controls: WASD + Arrow keys
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") {
+        setPlayerPos((pos) => ({ ...pos, x: Math.max(0, pos.x - 10) }));
+      } else if (e.key === "d" || e.key === "D" || e.key === "ArrowRight") {
+        setPlayerPos((pos) => ({ ...pos, x: Math.min(GAME_WIDTH - PLAYER_SIZE, pos.x + 10) }));
+      } else if (e.key === "w" || e.key === "W" || e.key === "ArrowUp") {
+        setVelocity(jumpStrength); // each key press adds upward velocity
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Click to jump (multi-click works)
+  const handleClick = () => {
+    setVelocity(jumpStrength); // every click adds upward velocity
   };
 
- // WASD controls
-useEffect(() => {
-  const handleKeyPress = (e) => {
-    if (e.key === "a" || e.key === "A") {
-      setPlayerPos((pos) => ({
-        ...pos,
-        x: Math.max(0, pos.x - 10),
-      }));
-    } 
-    else if (e.key === "d" || e.key === "D") {
-      setPlayerPos((pos) => ({
-        ...pos,
-        x: Math.min(GAME_WIDTH - PLAYER_SIZE, pos.x + 10),
-      }));
-    } 
-    else if (e.key === "w" || e.key === "W") {
-      jump();
-    }
-  };
-
-  window.addEventListener("keydown", handleKeyPress);
-  return () => window.removeEventListener("keydown", handleKeyPress);
-}, []);
-
-
-  // Generate obstacle pairs
+  // Gravity & Jump
   useEffect(() => {
     const interval = setInterval(() => {
-      const gapPosition = Math.floor(Math.random() * (GAME_HEIGHT - GAP_HEIGHT - 50)) + 50;
+      setPlayerPos((pos) => {
+        let newY = pos.y - velocity;
+        let newVelocity = velocity - gravity;
+
+        // Player hits the ground
+        if (newY >= GAME_HEIGHT - PLAYER_SIZE) {
+          newY = GAME_HEIGHT - PLAYER_SIZE;
+          newVelocity = 0;
+        }
+
+        // Player cannot go above top
+        if (newY < 0) {
+          newY = 0;
+          newVelocity = 0;
+        }
+
+        setVelocity(newVelocity);
+        return { ...pos, y: newY };
+      });
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [velocity]);
+
+  // Generate obstacles
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const minGap = 50;
+      const maxGap = GAME_HEIGHT - GAP_HEIGHT - 50;
+      const gapTop = Math.floor(Math.random() * (maxGap - minGap + 1) + minGap);
+
       setObstacles((prev) => [
         ...prev,
-        { id: Date.now(), left: GAME_WIDTH, gapTop: gapPosition },
+        { id: Date.now(), left: GAME_WIDTH, gapTop, passed: false },
       ]);
     }, 2000);
+
     return () => clearInterval(interval);
   }, []);
 
   // Move obstacles
   useEffect(() => {
-    const moveInterval = setInterval(() => {
+    const interval = setInterval(() => {
       setObstacles((prev) =>
         prev
-          .map((obs) => ({ ...obs, left: obs.left - 5 }))
+          .map((obs) => ({ ...obs, left: obs.left - OBSTACLE_SPEED }))
           .filter((obs) => obs.left > -OBSTACLE_WIDTH)
       );
     }, 20);
-    return () => clearInterval(moveInterval);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Collision detection & scoring
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setObstacles((prev) =>
+        prev.map((obs) => {
+          const playerRight = playerPos.x + PLAYER_SIZE;
+          const obsRight = obs.left + OBSTACLE_WIDTH;
 
-useEffect(() => {
-  const check = setInterval(() => {
-    obstacles.forEach((obs) => {
-      const playerRight = playerPos.x + PLAYER_SIZE;
-      const obsRight = obs.left + OBSTACLE_WIDTH;
+          const horizontalOverlap = playerRight > obs.left && playerPos.x < obsRight;
+          const playerTop = playerPos.y;
+          const playerBottom = playerPos.y + PLAYER_SIZE;
+          const topPipeBottom = obs.gapTop;
+          const bottomPipeTop = obs.gapTop + GAP_HEIGHT;
 
-      // Horizontal collision check
-      const isHorizontalOverlap = playerRight > obs.left && playerPos.x < obsRight;
+          // Collision
+          if (horizontalOverlap && (playerTop < topPipeBottom || playerBottom > bottomPipeTop)) {
+            alert("Game Over! Score: " + score);
+            setScore(0);
+            setPlayerPos({ x: 50, y: GAME_HEIGHT - PLAYER_SIZE });
+            setVelocity(0);
+            return null; // remove obstacles
+          }
 
-      // Vertical collision (not inside gap)
-      const hitTopPipe = playerPos.bottom + PLAYER_SIZE < obs.gapTop;
-      const hitBottomPipe = playerPos.bottom > obs.gapTop + GAP_HEIGHT;
+          // Scoring
+          if (!obs.passed && obsRight < playerPos.x) {
+            setScore((s) => s + 1);
+            return { ...obs, passed: true };
+          }
 
-      // Collision happens if overlapping horizontally AND NOT inside gap
-      if (isHorizontalOverlap && (hitTopPipe || hitBottomPipe)) {
-        alert("Game Over! Score: " + score);
-        setObstacles([]);
-        setScore(0);
-      }
+          return obs;
+        }).filter(Boolean)
+      );
+    }, 20);
 
-      // Scoring — player passed obstacle
-      if (obsRight < playerPos.x && !obs.passed) {
-        setScore((prev) => prev + 1);
-        obs.passed = true;
-      }
-    });
-  }, 20);
-
-  return () => clearInterval(check);
-}, [obstacles, playerPos, score]);
-
+    return () => clearInterval(interval);
+  }, [playerPos, score]);
 
   return (
     <div
-      className="game-area"
+      ref={gameAreaRef}
       tabIndex={0}
-    
-      onClick={jump}
+      onClick={handleClick} // every click adds jump
+      style={{
+        width: GAME_WIDTH,
+        height: GAME_HEIGHT,
+        border: "2px solid black",
+        position: "relative",
+        overflow: "hidden",
+        background: "#87ceeb",
+      }}
     >
-      <Player x={playerPos.x} bottom={playerPos.bottom} />
+      <Player x={playerPos.x} bottom={GAME_HEIGHT - playerPos.y - PLAYER_SIZE} />
       {obstacles.map((obs) => (
         <Obstacle key={obs.id} left={obs.left} gapTop={obs.gapTop} />
       ))}
-      <div className="score">Score: {score}</div>
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          fontWeight: "bold",
+          fontSize: 18,
+        }}
+      >
+        Score: {score}
+      </div>
     </div>
   );
 };

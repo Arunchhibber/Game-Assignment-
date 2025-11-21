@@ -1,34 +1,33 @@
 import React from "react";
 
 const OBSTACLE_WIDTH = 40;
+const GAP_HEIGHT = 100;
 
 const Obstacle = ({ left, gapTop }) => {
-  const GAME_HEIGHT = 300;
-  const GAP_HEIGHT = 100;
-  const topHeight = GAME_HEIGHT - gapTop - GAP_HEIGHT;
-
   return (
     <>
       {/* Top pipe */}
       <div
-        className="obstacle"
         style={{
-          left: `${left}px`,
-          bottom: `${gapTop + GAP_HEIGHT}px`,
-          height: `${topHeight}px`,
-          width: `${OBSTACLE_WIDTH}px`,
+          position: "absolute",
+          width: OBSTACLE_WIDTH,
+          height: gapTop,
+          backgroundColor: "green",
+          left: left,
+          top: 0,
         }}
-      ></div>
+      />
       {/* Bottom pipe */}
       <div
-        className="obstacle"
         style={{
-          left: `${left}px`,
-          bottom: `0px`,
-          height: `${gapTop}px`,
-          width: `${OBSTACLE_WIDTH}px`,
+          position: "absolute",
+          width: OBSTACLE_WIDTH,
+          height: 300 - gapTop - GAP_HEIGHT,
+          backgroundColor: "green",
+          left: left,
+          top: gapTop + GAP_HEIGHT,
         }}
-      ></div>
+      />
     </>
   );
 };
