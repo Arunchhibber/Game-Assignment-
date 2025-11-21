@@ -20,3 +20,14 @@
   background-color: #007bff;
   transition: bottom 0.02s linear, left 0.02s linear;
 }
+.obstacle {
+  position: absolute;
+  background-color: green;
+}
+
+.score {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-weight: bold;
+}
