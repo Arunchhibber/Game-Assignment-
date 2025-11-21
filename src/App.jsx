@@ -13,7 +13,7 @@ function App() {
       }}
     >
       <div>
-        <h1 style={{ textAlign: "center" }}>Jump Game with Dual Obstacles</h1>
+        <h1 style={{ textAlign: "center" }}>Jume Game by Arun</h1>
         <Game />
       </div>
     </div>

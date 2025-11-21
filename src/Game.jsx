@@ -126,10 +126,12 @@ const Game = () => {
           }
 
           // Scoring
-          if (!obs.passed && obsRight < playerPos.x) {
-            setScore((s) => s + 1);
-            return { ...obs, passed: true };
-          }
+          // Fixed scoring: only count once
+if (!obs.passed && obsRight < playerPos.x) {
+  setScore((s) => s + 1);
+  obs.passed = true; // immediately mark as passed
+}
+
 
           return obs;
         }).filter(Boolean)
@@ -168,6 +170,7 @@ const Game = () => {
       >
         Score: {score}
       </div>
+      
     </div>
   );
 };
